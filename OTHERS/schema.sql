@@ -474,6 +474,13 @@ BEGIN
         RAISE EXCEPTION 'Wallet not found';
     END IF;
 
+    IF EXISTS (
+    SELECT 1 FROM wallets 
+    WHERE id = p_wallet_id AND is_locked = TRUE) THEN
+        RAISE EXCEPTION 'Wallet is locked';
+    END IF;
+
+
     IF p_type IN ('withdraw', 'commission', 'purchase') THEN
         IF v_balance < p_amount THEN
             RAISE EXCEPTION 'Insufficient balance';
@@ -527,3 +534,10 @@ EXCEPTION
         RAISE; 
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE INDEX idx_enrollments_student ON enrollments(student_id);
+CREATE INDEX idx_enrollments_course ON enrollments(course_id);
+CREATE INDEX idx_reviews_course ON reviews(course_id);
+CREATE INDEX idx_transactions_student ON transactions(student_id);
+CREATE INDEX idx_coin_wallet ON coin_transactions(wallet_id);
