@@ -59,13 +59,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username", "first_name", "last_name", "phone"]
+    REQUIRED_FIELDS = ["email", "first_name", "last_name", "phone"]
+    USERNAME_FIELD ="username"
 
     objects = UserManager()
 
     def __str__(self):
-        return f"{self.email} ({self.role})"
+        return f"{self.username} ({self.role})"
 
 
 class Teacher(models.Model):
@@ -75,7 +75,7 @@ class Teacher(models.Model):
     total_commission = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
 
     def __str__(self):
-        return f"Teacher: {self.user.email}"
+        return f"Teacher: {self.user.username}"
 
 
 class Student(models.Model):
@@ -84,4 +84,4 @@ class Student(models.Model):
     level = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
-        return f"Student: {self.user.email}"
+        return f"Student: {self.user.username}"

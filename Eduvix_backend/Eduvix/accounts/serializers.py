@@ -1,20 +1,21 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User,Student
+from .models import User
+from .utils import generate_otp,verify_otp,send_otp_email
 
 class LoginSerializer(serializers.Serializer):
-    email=serializers.EmailField()
+    username=serializers.CharField(max_length=50)
     password=serializers.CharField(write_only=True)
     
     def validate(self, data):
-        email = data.get("email")
+        username = data.get("username")
         password = data.get("password")
-        user = authenticate(username=email, password=password)
+        user = authenticate(username=username, password=password)
         
         if user:
             data['user'] = user
             return data
-        raise serializers.ValidationError("password or email incorect")
+        raise serializers.ValidationError("password or username incorect")
     
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -32,3 +33,37 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
             phone=validated_data['phone']
         )
         return user
+    
+class SendOTPSerializer(serializers.Serializer):
+    email=serializers.EmailField()
+    
+    def validate_email(self,value):
+        try:
+            user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email.")
+
+        if user.is_verified:
+            raise serializers.ValidationError("User is already verified")
+        
+        return value
+    
+    def create(self, validated_data):
+        email=validated_data['email']
+        token,otp=generate_otp(email)
+        
+        send_otp_email(email,otp)
+        
+        return token
+        
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+    token = serializers.CharField()
+
+    def validate(self, data):
+        if not verify_otp(data['email'],data['otp'], data['token']):
+            raise serializers.ValidationError(
+                "The verification code is invalid or has expired."
+            )
+        return data
